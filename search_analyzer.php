@@ -1,216 +1,195 @@
 <?php
 //
-//ПредАнализатор
+//РџСЂРµРґРђРЅР°Р»РёР·Р°С‚РѕСЂ
 //
-//Большие словосочетания не берем, максимум 3 слова
-//    Ссылки не принимаются (!) Нововведение в том что будет улучшен поиск ссылок по названию доменов исключаются все поиски содержащие .com .ru .net .biz и т.д. А так же исключаться ссылки с опечатками (напр. htp://)
-//    Старые статьи в расчет не берутся
-//    Не берем запросы короче 3 символов(!)
-//    Не берем запросы длиннее 255 символов(! бывают оригиналы)
-//    Не анализируем запросы со спецсимволами(вырезаем спецсимволы) - !"№;%:?*'{}[]%()_@#$^&<>/|\. В логах из спецсимволов каша. Берем запросы только с тире.(1)
-//    Не анализируем запросы только из цифр и спецсимволов(! например даты и всякий мусор типа 11%)
-//    Заменяем повторяющиеся пробелы в запросах одним пробелом(!). Например "Владимир Путин"
+//Р‘РѕР»СЊС€РёРµ СЃР»РѕРІРѕСЃРѕС‡РµС‚Р°РЅРёСЏ РЅРµ Р±РµСЂРµРј, РјР°РєСЃРёРјСѓРј 3 СЃР»РѕРІР°
+//    РЎСЃС‹Р»РєРё РЅРµ РїСЂРёРЅРёРјР°СЋС‚СЃСЏ (!) РќРѕРІРѕРІРІРµРґРµРЅРёРµ РІ С‚РѕРј С‡С‚Рѕ Р±СѓРґРµС‚ СѓР»СѓС‡С€РµРЅ РїРѕРёСЃРє СЃСЃС‹Р»РѕРє РїРѕ РЅР°Р·РІР°РЅРёСЋ РґРѕРјРµРЅРѕРІ РёСЃРєР»СЋС‡Р°СЋС‚СЃСЏ РІСЃРµ РїРѕРёСЃРєРё СЃРѕРґРµСЂР¶Р°С‰РёРµ .com .ru .net .biz Рё С‚.Рґ. Рђ С‚Р°Рє Р¶Рµ РёСЃРєР»СЋС‡Р°С‚СЊСЃСЏ СЃСЃС‹Р»РєРё СЃ РѕРїРµС‡Р°С‚РєР°РјРё (РЅР°РїСЂ. htp://)
+//    РќРµ Р±РµСЂРµРј Р·Р°РїСЂРѕСЃС‹ РєРѕСЂРѕС‡Рµ 3 СЃРёРјРІРѕР»РѕРІ(!)
+//    РќРµ Р±РµСЂРµРј Р·Р°РїСЂРѕСЃС‹ РґР»РёРЅРЅРµРµ 255 СЃРёРјРІРѕР»РѕРІ(! Р±С‹РІР°СЋС‚ РѕСЂРёРіРёРЅР°Р»С‹)
+//    РќРµ Р°РЅР°Р»РёР·РёСЂСѓРµРј Р·Р°РїСЂРѕСЃС‹ СЃРѕ СЃРїРµС†СЃРёРјРІРѕР»Р°РјРё(РІС‹СЂРµР·Р°РµРј СЃРїРµС†СЃРёРјРІРѕР»С‹) - !"в„–;%:?*'{}[]%()_@#$^&<>/|\. Р’ Р»РѕРіР°С… РёР· СЃРїРµС†СЃРёРјРІРѕР»РѕРІ РєР°С€Р°. Р‘РµСЂРµРј Р·Р°РїСЂРѕСЃС‹ С‚РѕР»СЊРєРѕ СЃ С‚РёСЂРµ.(1)
+//    РќРµ Р°РЅР°Р»РёР·РёСЂСѓРµРј Р·Р°РїСЂРѕСЃС‹ С‚РѕР»СЊРєРѕ РёР· С†РёС„СЂ Рё СЃРїРµС†СЃРёРјРІРѕР»РѕРІ(! РЅР°РїСЂРёРјРµСЂ РґР°С‚С‹ Рё РІСЃСЏРєРёР№ РјСѓСЃРѕСЂ С‚РёРїР° 11%)
+//    Р—Р°РјРµРЅСЏРµРј РїРѕРІС‚РѕСЂСЏСЋС‰РёРµСЃСЏ РїСЂРѕР±РµР»С‹ РІ Р·Р°РїСЂРѕСЃР°С… РѕРґРЅРёРј РїСЂРѕР±РµР»РѕРј(!).
 //
-//Поисковик
+//РџРѕРёСЃРєРѕРІРёРє
 //
-//    Поиск в тексте статьи по чистому запросу(поиск по оригинальному тексту запроса без изменений)
-//    Поиск в статье по тексту без спецсимволов с заменой на пробелы и без
-//    Ищем по нормализованному тексту запроса(существительное именительный падеж)
-//    В том виде в котором нашли запоминаем для постанализатора
+//    РџРѕРёСЃРє РІ С‚РµРєСЃС‚Рµ СЃС‚Р°С‚СЊРё РїРѕ С‡РёСЃС‚РѕРјСѓ Р·Р°РїСЂРѕСЃСѓ(РїРѕРёСЃРє РїРѕ РѕСЂРёРіРёРЅР°Р»СЊРЅРѕРјСѓ С‚РµРєСЃС‚Сѓ Р·Р°РїСЂРѕСЃР° Р±РµР· РёР·РјРµРЅРµРЅРёР№)
+//    РџРѕРёСЃРє РІ СЃС‚Р°С‚СЊРµ РїРѕ С‚РµРєСЃС‚Сѓ Р±РµР· СЃРїРµС†СЃРёРјРІРѕР»РѕРІ СЃ Р·Р°РјРµРЅРѕР№ РЅР° РїСЂРѕР±РµР»С‹ Рё Р±РµР·
+//    РС‰РµРј РїРѕ РЅРѕСЂРјР°Р»РёР·РѕРІР°РЅРЅРѕРјСѓ С‚РµРєСЃС‚Сѓ Р·Р°РїСЂРѕСЃР°(СЃСѓС‰РµСЃС‚РІРёС‚РµР»СЊРЅРѕРµ РёРјРµРЅРёС‚РµР»СЊРЅС‹Р№ РїР°РґРµР¶)
+//    Р’ С‚РѕРј РІРёРґРµ РІ РєРѕС‚РѕСЂРѕРј РЅР°С€Р»Рё Р·Р°РїРѕРјРёРЅР°РµРј РґР»СЏ РїРѕСЃС‚Р°РЅР°Р»РёР·Р°С‚РѕСЂР°
 //
-//ПостАнализатор
+//РџРѕСЃС‚РђРЅР°Р»РёР·Р°С‚РѕСЂ
 //
-//    Убираем из запроса все лишние символы
-//    Преобразуем очищенную форму в нормализованную сохраняя все заглавные буквы и аббревиатуры
-//    Поиск по Именам и Компаниям Ведомостей
-//    Сохранение в быстрый поиск или чистой формы запроса или найденное имя/название
-//    Сохранение в саджесты чистой формы запроса + нормализаванной формы(по нормализованной форме при выдаче будем группировать выражения)
-//    В саджесты сохраняются запросы только в нижнем регистре
+//    РЈР±РёСЂР°РµРј РёР· Р·Р°РїСЂРѕСЃР° РІСЃРµ Р»РёС€РЅРёРµ СЃРёРјРІРѕР»С‹
+//    РџСЂРµРѕР±СЂР°Р·СѓРµРј РѕС‡РёС‰РµРЅРЅСѓСЋ С„РѕСЂРјСѓ РІ РЅРѕСЂРјР°Р»РёР·РѕРІР°РЅРЅСѓСЋ СЃРѕС…СЂР°РЅСЏСЏ РІСЃРµ Р·Р°РіР»Р°РІРЅС‹Рµ Р±СѓРєРІС‹ Рё Р°Р±Р±СЂРµРІРёР°С‚СѓСЂС‹
+//    РџРѕРёСЃРє РїРѕ РРјРµРЅР°Рј Рё РљРѕРјРїР°РЅРёСЏРј Р’РµРґРѕРјРѕСЃС‚РµР№
+//    РЎРѕС…СЂР°РЅРµРЅРёРµ РІ Р±С‹СЃС‚СЂС‹Р№ РїРѕРёСЃРє РёР»Рё С‡РёСЃС‚РѕР№ С„РѕСЂРјС‹ Р·Р°РїСЂРѕСЃР° РёР»Рё РЅР°Р№РґРµРЅРЅРѕРµ РёРјСЏ/РЅР°Р·РІР°РЅРёРµ
+//    РЎРѕС…СЂР°РЅРµРЅРёРµ РІ СЃР°РґР¶РµСЃС‚С‹ С‡РёСЃС‚РѕР№ С„РѕСЂРјС‹ Р·Р°РїСЂРѕСЃР° + РЅРѕСЂРјР°Р»РёР·Р°РІР°РЅРЅРѕР№ С„РѕСЂРјС‹(РїРѕ РЅРѕСЂРјР°Р»РёР·РѕРІР°РЅРЅРѕР№ С„РѕСЂРјРµ РїСЂРё РІС‹РґР°С‡Рµ Р±СѓРґРµРј РіСЂСѓРїРїРёСЂРѕРІР°С‚СЊ РІС‹СЂР°Р¶РµРЅРёСЏ)
+//    Р’ СЃР°РґР¶РµСЃС‚С‹ СЃРѕС…СЂР°РЅСЏСЋС‚СЃСЏ Р·Р°РїСЂРѕСЃС‹ С‚РѕР»СЊРєРѕ РІ РЅРёР¶РЅРµРј СЂРµРіРёСЃС‚СЂРµ
 //
-//Сохранение
+//РЎРѕС…СЂР°РЅРµРЅРёРµ
 //
-//    Сохранение Быстрого поиска. Проверка на наличие в быстром поиске уже существующих форм выражение(при необходимости заменяем)
-//    Сохранение Саджеста. Уже существующим саджестам просто повышается рейтинг запроса и увеличивается время последнего запроса(важно при выдаче)
+//    РЎРѕС…СЂР°РЅРµРЅРёРµ Р‘С‹СЃС‚СЂРѕРіРѕ РїРѕРёСЃРєР°. РџСЂРѕРІРµСЂРєР° РЅР° РЅР°Р»РёС‡РёРµ РІ Р±С‹СЃС‚СЂРѕРј РїРѕРёСЃРєРµ СѓР¶Рµ СЃСѓС‰РµСЃС‚РІСѓСЋС‰РёС… С„РѕСЂРј РІС‹СЂР°Р¶РµРЅРёРµ(РїСЂРё РЅРµРѕР±С…РѕРґРёРјРѕСЃС‚Рё Р·Р°РјРµРЅСЏРµРј)
 
-class Analizer
+/*
+
+$config=array(
+    'encoding'  =>'utf-8',      //  РєРѕРґРёСЂРѕРІРєР°, РѕРґРЅР° РёР·: 'cp866', 'cp1251', 'koi8-r', 'utf-8'
+    'os'        =>'freebsd',    //  РѕРїРµСЂР°С†РёРѕРЅРЅР°СЏ СЃРёСЃС‚РµРјР°, РѕРґРЅР° РёР· 'freebsd', 'linux3.0-32bit'
+    'script_path'   => './'     //  РїСѓС‚СЊ Рє С‚РµРєСѓС‰РёРј СЃРєСЂРёРїС‚Р°Рј
+);
+
+*/
+
+class SearchAnalizer
 {
-    private $id_news, $debug_mode, $searchQuery, $searchDB, $analize_period;
+    private $debug_mode, $searchQuery;
+    private $related;
     private $article;
     private $document_root;
     private $mysql;
-    private $logtext, $logfile;
     private $stemmer_obj;
-    private $full_url;
+    static $encodings=array('cp866', 'cp1251', 'koi8-r', 'utf-8');
+    static $oses=array('freebsd', 'linux3.0-32bit');
+    private $encoding;
+    private $mystem_cmd;
+    private $added=array();
+    private $removed=array();
 
 
-    function __construct($news_text, $debug_mode, $searchDB, $analize_period, $document_root, $memcache, $url)
+    function __construct($news_text, $related=array(), $config=array())
     {
-        require_once "stemmer.php";
-        $this->id_news = $id_news;
-        $this->debug_mode = $debug_mode;
-        $this->searchDB = $searchDB;
-        $this->analize_period = $analize_period;
-        $this->document_root = $document_root;
-        $this->memcache = $memcache;
-        $this->logtext = "";
-        $this->logfile = $document_root . "10/htdocs/search/logsuggest.log";
-        $this->mysql = new Mysql('db_search');
-        $this->stemmer_obj = new Stemmer();
-        $this->full_url = $url;
-        //error_reporting(E_ALL);
-        //ini_set('display_errors', 1);
+        $this->debug_mode = 1;
+        $this->article = $news_text;
+        $this->related=$related;
+        $this->stemmer_obj = new SearchAnalizer_Stemmer();
+
+        if (isset($config['encoding']) && in_array($config['encoding'], self::$encodings)) {
+            $this->encoding=$config['encoding'];
+        } else {
+            $this->encoding='utf-8';
+        }
+        if (isset($config['os']) && in_array($config['os'], self::$oses)) {
+            $mystem=$config['os'];
+        } else {
+            $mystem='freebsd';
+        }
+
+        if (isset($config['script_path'])) {
+            $path=$config['script_path'];
+        } elseif (isset($GLOBALS['argv'])) {
+            $path=dirname(realpath($GLOBALS['argv'][0]));
+        } else {
+            $path='./';
+        }
+        $this->mystem_cmd=$path.'/mystem/mystem.'.$mystem;
+
     }
 
     function Analize($searchQuery)
     {
-        include_once('/usr/www/inc/date_funcs.inc');
-
-        // Выводим форму упрощения поиска
-        if ($this->debug_mode) {
-            $this->analize_period = 1000;
-            ?>
-            <form method="get" action="/search/">
-                <input type="text" size="70" name="s" value="<?= htmlspecialchars($_REQUEST['s']) ?>"> Искомое выражение
-                <br>
-                <input type="text" size="70" name="u" value="<?= $_REQUEST['u'] ?>"> URL статьи(вместе с http://)<br>
-                <input type="hidden" name="m" value="u">
-                <input type="hidden" name="d" value="1">
-                <input type="submit" value="Отправить">
-            </form><br><br>
-        <?php
-        }
-
         try {
             if ($this->debug_mode) {
-                $this->message("Запрос:" . $searchQuery);
-                $this->message("Новость:" . $this->id_news);
+                $this->message("Р—Р°РїСЂРѕСЃ:" . $searchQuery);
             }
             $originalsearchQuery = $searchQuery;
-            // Запускаем преданализатор
+            // Р—Р°РїСѓСЃРєР°РµРј РїСЂРµРґР°РЅР°Р»РёР·Р°С‚РѕСЂ
             $searchQuery = $this->PreAnalizer($searchQuery);
-            // Запускаем поисковый анализатор
+            // Р—Р°РїСѓСЃРєР°РµРј РїРѕРёСЃРєРѕРІС‹Р№ Р°РЅР°Р»РёР·Р°С‚РѕСЂ
             $searchQuery = $this->SearchAnalizer($searchQuery);
-            // Запускаем постанализатор
+            // Р—Р°РїСѓСЃРєР°РµРј РїРѕСЃС‚Р°РЅР°Р»РёР·Р°С‚РѕСЂ
             $searchQuery = $this->PostAnalizer($searchQuery, $originalsearchQuery);
         } catch (Exception $ex) {
             if ($this->debug_mode) echo $ex->getMessage();
         }
-//        try {
-//            // логируем все происходящее
-//            $this->logSave();
-//        } catch (Exception $ex) {
-//            // пропускаем ошибки логера
-//        }
     }
 
     function PreAnalizer($searchQuery)
     {
-        $this->message("Запуск проверки пред анализатора поискового запроса");
+        $this->message("Р—Р°РїСѓСЃРє РїСЂРѕРІРµСЂРєРё РїСЂРµРґ Р°РЅР°Р»РёР·Р°С‚РѕСЂР° РїРѕРёСЃРєРѕРІРѕРіРѕ Р·Р°РїСЂРѕСЃР°");
 
-        // Старые статьи в расчет не берутся.
-        $news = $this->mysql->get_arrayref("select news_body, news_date from " . $this->searchDB . ".tbl_news where news_id = '" . $this->id_news . "' limit 1");
-        if (count($news) == 0) {
-            $this->error("Статья не найдена в базу данных поиска. ID новости:", $this->id_news);
-        }
-        $this->article = $news[0]['news_body'];
-        if (inc_date(-$this->analize_period) . ' 00:00:00' > $news[0]['news_date']) {
-            $this->error("Статья слишком старая. Допустимый период анализа статьи:", $this->analize_period . " дней");
-        }
-
-        // Не берем запросы короче 3 символов
+        // РќРµ Р±РµСЂРµРј Р·Р°РїСЂРѕСЃС‹ РєРѕСЂРѕС‡Рµ 3 СЃРёРјРІРѕР»РѕРІ
         if (strlen($searchQuery) < 3) {
-            $this->error("Запрос слишком короткий. Не обрабатываем запросы короче 3 символов");
+            $this->error("Р—Р°РїСЂРѕСЃ СЃР»РёС€РєРѕРј РєРѕСЂРѕС‚РєРёР№. РќРµ РѕР±СЂР°Р±Р°С‚С‹РІР°РµРј Р·Р°РїСЂРѕСЃС‹ РєРѕСЂРѕС‡Рµ 3 СЃРёРјРІРѕР»РѕРІ");
         }
 
-        // Не берем запросы длиннее 255 символов
+        // РќРµ Р±РµСЂРµРј Р·Р°РїСЂРѕСЃС‹ РґР»РёРЅРЅРµРµ 255 СЃРёРјРІРѕР»РѕРІ
         if (strlen($searchQuery) > 255) {
-            $this->error("Запрос слишком длинный. Не обрабатываем запросы длинее 255 символов");
+            $this->error("Р—Р°РїСЂРѕСЃ СЃР»РёС€РєРѕРј РґР»РёРЅРЅС‹Р№. РќРµ РѕР±СЂР°Р±Р°С‚С‹РІР°РµРј Р·Р°РїСЂРѕСЃС‹ РґР»РёРЅРµРµ 255 СЃРёРјРІРѕР»РѕРІ");
         }
 
-        // Заменяем все повторяющиеся пробельные символы на одиночные пробелы
+        // Р—Р°РјРµРЅСЏРµРј РІСЃРµ РїРѕРІС‚РѕСЂСЏСЋС‰РёРµСЃСЏ РїСЂРѕР±РµР»СЊРЅС‹Рµ СЃРёРјРІРѕР»С‹ РЅР° РѕРґРёРЅРѕС‡РЅС‹Рµ РїСЂРѕР±РµР»С‹
         $searchQuery = preg_replace('/[\s]+/', ' ', $searchQuery);
 
-        // Большие словосочетания не берем максимум 3 слова
-        $wordsInQuery = preg_replace('/[\+\=\!\"\№\;\%\:\?\*\'\»\«\{\}\[\]\%\(\)\_\@\#\$\^\&\<\>\/\|\.0-9]/', ' ', $searchQuery);
+        // Р‘РѕР»СЊС€РёРµ СЃР»РѕРІРѕСЃРѕС‡РµС‚Р°РЅРёСЏ РЅРµ Р±РµСЂРµРј РјР°РєСЃРёРјСѓРј 3 СЃР»РѕРІР°
+        $wordsInQuery = preg_replace('/[\+\=\!\"\в„–\;\%\:\?\*\'\В»\В«\{\}\[\]\%\(\)\_\@\#\$\^\&\<\>\/\|\.0-9]/', ' ', $searchQuery);
         $wordsInQuery = str_replace('\\', '', trim($wordsInQuery));
         $wordsInQuery = preg_replace('/[\s]+/', ' ', $wordsInQuery);
+        print "Words in query: $wordsInQuery\n\n";
         $wordsInQuery = explode(' ', $wordsInQuery);
         if (count($wordsInQuery) > 3) {
-            $this->error("Не обрабатываем запросы больше 3 слов");
+            $this->error("РќРµ РѕР±СЂР°Р±Р°С‚С‹РІР°РµРј Р·Р°РїСЂРѕСЃС‹ Р±РѕР»СЊС€Рµ 3 СЃР»РѕРІ");
         }
 
-        // Запросы содержащие URL не принимаются
-        if (preg_match('/(\.[a-z1-9а-я]+|http\:\/\/|https\:\/\/|htp\:\/\/|htps\:\/\/)/i', $searchQuery)) {
-            $this->error("Не обрабатываем запросы содержащие URL");
+        // Р—Р°РїСЂРѕСЃС‹ СЃРѕРґРµСЂР¶Р°С‰РёРµ URL РЅРµ РїСЂРёРЅРёРјР°СЋС‚СЃСЏ
+        if (preg_match('/(\.[a-z1-9Р°-СЏ]+|http\:\/\/|https\:\/\/|htp\:\/\/|htps\:\/\/)/i', $searchQuery)) {
+            $this->error("РќРµ РѕР±СЂР°Р±Р°С‚С‹РІР°РµРј Р·Р°РїСЂРѕСЃС‹ СЃРѕРґРµСЂР¶Р°С‰РёРµ URL");
         }
 
-        // Пустые и состоящие из одних символов и чисел выражения не берем
-        $clearQuery = preg_replace('/[\!\"\№\;\%\:\?\*\'\»\«\{\}\[\]\%\(\)\_\@\#\$\^\&\<\>\/\|\.0-9]/', '', $searchQuery);
+        // РџСѓСЃС‚С‹Рµ Рё СЃРѕСЃС‚РѕСЏС‰РёРµ РёР· РѕРґРЅРёС… СЃРёРјРІРѕР»РѕРІ Рё С‡РёСЃРµР» РІС‹СЂР°Р¶РµРЅРёСЏ РЅРµ Р±РµСЂРµРј
+        $clearQuery = preg_replace('/[\!\"\в„–\;\%\:\?\*\'\В»\В«\{\}\[\]\%\(\)\_\@\#\$\^\&\<\>\/\|\.0-9]/', '', $searchQuery);
         $clearQuery = str_replace('\\', '', $clearQuery);
         if (strlen(trim($clearQuery)) < 1) {
-            $this->error("Пустые, неинформативные и состоящие из одних символов и цифр выражения не берем");
+            $this->error("РџСѓСЃС‚С‹Рµ, РЅРµРёРЅС„РѕСЂРјР°С‚РёРІРЅС‹Рµ Рё СЃРѕСЃС‚РѕСЏС‰РёРµ РёР· РѕРґРЅРёС… СЃРёРјРІРѕР»РѕРІ Рё С†РёС„СЂ РІС‹СЂР°Р¶РµРЅРёСЏ РЅРµ Р±РµСЂРµРј");
         }
 
-        // Берем только выражения с нормализованной формой первого(или единственного) слова
+        // Р‘РµСЂРµРј С‚РѕР»СЊРєРѕ РІС‹СЂР°Р¶РµРЅРёСЏ СЃ РЅРѕСЂРјР°Р»РёР·РѕРІР°РЅРЅРѕР№ С„РѕСЂРјРѕР№ РїРµСЂРІРѕРіРѕ(РёР»Рё РµРґРёРЅСЃС‚РІРµРЅРЅРѕРіРѕ) СЃР»РѕРІР°
         if (count($wordsInQuery) > 1) {
-            if (!$this->is_normalized($wordsInQuery[0])) $this->error("Не нормализованные словосочетания и слова не берем");
+            if (!$this->is_normalized($wordsInQuery[0])) $this->error("РќРµ РЅРѕСЂРјР°Р»РёР·РѕРІР°РЅРЅС‹Рµ СЃР»РѕРІРѕСЃРѕС‡РµС‚Р°РЅРёСЏ Рё СЃР»РѕРІР° РЅРµ Р±РµСЂРµРј 1");
         } else {
-            if (!$this->is_normalized($clearQuery)) $this->error("Не нормализованные словосочетания и слова не берем");
+            if (!$this->is_normalized($clearQuery)) $this->error("РќРµ РЅРѕСЂРјР°Р»РёР·РѕРІР°РЅРЅС‹Рµ СЃР»РѕРІРѕСЃРѕС‡РµС‚Р°РЅРёСЏ Рё СЃР»РѕРІР° РЅРµ Р±РµСЂРµРј 2");
         }
 
-        $this->message("Ошибок нет. Выражение допущено к поиску в следующей форме:", $searchQuery);
+        $this->message("РћС€РёР±РѕРє РЅРµС‚. Р’С‹СЂР°Р¶РµРЅРёРµ РґРѕРїСѓС‰РµРЅРѕ Рє РїРѕРёСЃРєСѓ РІ СЃР»РµРґСѓСЋС‰РµР№ С„РѕСЂРјРµ:", $searchQuery);
         return $searchQuery;
     }
 
     function SearchAnalizer($searchQuery)
     {
-        $this->message("Запуск поиска вхождений поискового выражения в текст статьи");
+        $this->message("Р—Р°РїСѓСЃРє РїРѕРёСЃРєР° РІС…РѕР¶РґРµРЅРёР№ РїРѕРёСЃРєРѕРІРѕРіРѕ РІС‹СЂР°Р¶РµРЅРёСЏ РІ С‚РµРєСЃС‚ СЃС‚Р°С‚СЊРё");
 
-        // поиск точных вхождений в текст статьи
-        $searchQueryUTF = iconv('windows-1251', 'UTF-8', $searchQuery);
-        $articleUTF = iconv('windows-1251', 'UTF-8', $this->article);
-        $templateOfInsert = "/(^|\s|)(" . preg_quote($searchQueryUTF) . iconv("windows-1251", "UTF-8", ")(\'|\"|\,|\;|\.|\s|\n|\r|\»|$)/isu");
+        // РїРѕРёСЃРє С‚РѕС‡РЅС‹С… РІС…РѕР¶РґРµРЅРёР№ РІ С‚РµРєСЃС‚ СЃС‚Р°С‚СЊРё
+        if ($this->encoding!='utf-8') {
+            $searchQueryUTF = iconv($this->encoding, 'UTF-8', $searchQuery);
+            $articleUTF = iconv($this->encoding, 'UTF-8', $this->article);
+        } else {
+            $searchQueryUTF=$searchQuery;
+            $articleUTF=$this->article;
+        }
+        $templateOfInsert = "/(^|\s|)(" . preg_quote($searchQueryUTF) . iconv("windows-1251", "UTF-8", ")(\'|\"|\,|\;|\.|\s|\n|\r|\В»|$)/isu");
         $r = preg_match($templateOfInsert, $articleUTF, $matches);
         if (!$r) {
-            $this->message("Оригинальная форма '" . htmlspecialchars($searchQuery) . "'", "не найдено");
-            $normalizedQuery = preg_replace('/[\+\=\!\"\№\;\%\:\?\*\'\»\«\{\}\[\]\%\(\)\_\@\#\$\^\&\<\>\/\|\.]/', ' ', $searchQuery);
+            $this->message("РћСЂРёРіРёРЅР°Р»СЊРЅР°СЏ С„РѕСЂРјР° '" . htmlspecialchars($searchQuery) . "'", "РЅРµ РЅР°Р№РґРµРЅРѕ");
+            $normalizedQuery = preg_replace('/[\+\=\!\"\в„–\;\%\:\?\*\'\В»\В«\{\}\[\]\%\(\)\_\@\#\$\^\&\<\>\/\|\.]/', ' ', $searchQuery);
             $normalizedQuery = str_replace('\\', '', trim($normalizedQuery));
             $normalizedQuery = preg_replace('/[\s]+/', ' ', $normalizedQuery);
-            $normalizedQueryUTF = iconv("windows-1251", "UTF-8", $normalizedQuery);
-            $r = preg_match("/(^|\s|)(" . preg_quote($normalizedQueryUTF) . iconv("windows-1251", "UTF-8", ")(\'|\"|\,|\;|\.|\s|\n|\r|\»|$)/isu"), $articleUTF, $matches);
+
+            $normalizedQueryUTF = $this->encoding!='utf-8' ? mb_convert_encoding($normalizedQuery,"UTF-8", $this->encoding) : $normalizedQuery;
+
+            $r = preg_match("/(^|\s|)(" . preg_quote($normalizedQueryUTF) . mb_convert_encoding(")(\'|\"|\,|\;|\.|\s|\n|\r|\В»|$)/isu", "UTF-8", "windows-1251"), $articleUTF, $matches);
             if (!$r) {
-                $this->message("Чистая форма(без спецсимволов) '" . htmlspecialchars($normalizedQuery) . "'", "не найдено");
-                // Убираем поиск по словоформе, словоформы слишком несовершенны что бы по ним искать
-//                $wordsBeforeInQuery = count(explode(' ', $normalizedQuery)); // Количество слов до стемера
-//                if ($wordsBeforeInQuery > 1) $this->error("Словосочетания для стеммовского поиска не берем");
-//                $lemmatizedWords = $this->lemmatized_word($normalizedQuery);
-//                $normalizedQuery = $lemmatizedWords;
-//                $normalizedQuery = str_replace('?', '', $normalizedQuery);
-//                $normalizedQuery = str_replace('!', '', $normalizedQuery);
-//                $normalizedQuery = preg_replace('/[\s]+/', ' ', $normalizedQuery);
-//                $wordsAfterInQuery = count(explode(' ', $normalizedQuery)); // Количество слов после стемера
-//                if (trim($normalizedQuery) == "" || $wordsBeforeInQuery != $wordsAfterInQuery) {
-//                    $this->error("Не удалось грамотно нормализовать запрос");
-//                }
-//                $normalizedQueryUTF = iconv("windows-1251", "UTF-8", $normalizedQuery);
-//                $r = preg_match("/(^|\s|)(" . $normalizedQueryUTF . iconv("windows-1251", "UTF-8", ")(\'|\"|\,|\;|\.|\s|\n|\r|\»|$)/isu"), $articleUTF, $matches);
-//                if (!$r) {
-//                    $this->message("После-стреммер форма(именительный падеж, единственное число) '" . htmlspecialchars($normalizedQuery) . "'", "не найдено");
-//                } else {
-//                    $searchQuery = iconv("UTF-8", "windows-1251", $matches[2]);
-//                }
+                $this->message("Р§РёСЃС‚Р°СЏ С„РѕСЂРјР°(Р±РµР· СЃРїРµС†СЃРёРјРІРѕР»РѕРІ) '" . htmlspecialchars($normalizedQuery) . "'", "РЅРµ РЅР°Р№РґРµРЅРѕ");
             } else {
-                $searchQuery = iconv("UTF-8", "windows-1251", $matches[2]);
+                $searchQuery = $this->encoding!='utf-8' ? iconv("UTF-8", $this->encoding, $matches[2]) : $matches[2];
             }
         } else {
-            $searchQuery = iconv("UTF-8", "windows-1251", $matches[2]);
+            $searchQuery = $this->encoding!='utf-8' ? iconv("UTF-8", $this->encoding, $matches[2]) : $matches[2];
         }
 
-        /* Поиск не удался выходим. */
+        /* РџРѕРёСЃРє РЅРµ СѓРґР°Р»СЃСЏ РІС‹С…РѕРґРёРј. */
         if (!$r) {
-            $this->error("Не удалось найти в тексте поисковый запрос");
+            $this->error("РќРµ СѓРґР°Р»РѕСЃСЊ РЅР°Р№С‚Рё РІ С‚РµРєСЃС‚Рµ РїРѕРёСЃРєРѕРІС‹Р№ Р·Р°РїСЂРѕСЃ");
         } else {
-            $this->message("Поиск удался. Выражение допущено к анализу в следующей форме:", $searchQuery);
+            $this->message("РџРѕРёСЃРє СѓРґР°Р»СЃСЏ. Р’С‹СЂР°Р¶РµРЅРёРµ РґРѕРїСѓС‰РµРЅРѕ Рє Р°РЅР°Р»РёР·Сѓ РІ СЃР»РµРґСѓСЋС‰РµР№ С„РѕСЂРјРµ:", $searchQuery);
         }
 
         return $searchQuery;
@@ -218,55 +197,55 @@ class Analizer
 
     function PostAnalizer($searchQuery, $originalsearchQuery)
     {
-        $this->message("Запуск пост анализатора поискового выражения");
+        $this->message("Р—Р°РїСѓСЃРє РїРѕСЃС‚ Р°РЅР°Р»РёР·Р°С‚РѕСЂР° РїРѕРёСЃРєРѕРІРѕРіРѕ РІС‹СЂР°Р¶РµРЅРёСЏ");
 
-        // Убираем все спецсимволы
-        $cleanQuery = preg_replace('/[\+\=\!\"\№\;\%\:\?\*\'\»\«\{\}\[\]\%\(\)\_\@\#\$\^\&\<\>\/\|\.]/', ' ', $searchQuery);
+        // РЈР±РёСЂР°РµРј РІСЃРµ СЃРїРµС†СЃРёРјРІРѕР»С‹
+        $cleanQuery = preg_replace('/[\+\=\!\"\в„–\;\%\:\?\*\'\В»\В«\{\}\[\]\%\(\)\_\@\#\$\^\&\<\>\/\|\.]/', ' ', $searchQuery);
         $cleanQuery = str_replace('\\', '', trim($cleanQuery));
         $cleanQuery = preg_replace('/[\s]+/', ' ', $cleanQuery);
 
 
-        // Получаем нормализованную форму
-        $wordsBeforeInQuery = count(explode(' ', $cleanQuery)); // Количество слов до стемера
-        $normalizedQueryUTF = mb_convert_encoding($cleanQuery, 'UTF-8', 'windows-1251');
+        // РџРѕР»СѓС‡Р°РµРј РЅРѕСЂРјР°Р»РёР·РѕРІР°РЅРЅСѓСЋ С„РѕСЂРјСѓ
+        $wordsBeforeInQuery = count(explode(' ', $cleanQuery)); // РљРѕР»РёС‡РµСЃС‚РІРѕ СЃР»РѕРІ РґРѕ СЃС‚РµРјРµСЂР°
+        $normalizedQueryUTF = $this->encoding!='utf-8' ? mb_convert_encoding($cleanQuery, 'UTF-8', $this->encoding) : $cleanQuery;
         $normalizedQueryUTF = $this->stemmer($normalizedQueryUTF);
-        $normalizedQuery = mb_convert_encoding($normalizedQueryUTF, 'windows-1251', 'UTF-8');
+        $normalizedQuery = $this->encoding!='utf-8' ? mb_convert_encoding($normalizedQueryUTF, $this->encoding, 'UTF-8') : $normalizedQueryUTF;
         $normalizedQuery = str_replace('?', '', $normalizedQuery);
         $normalizedQuery = str_replace('!', '', $normalizedQuery);
         $normalizedQuery = preg_replace('/[\s]+/', ' ', $normalizedQuery);
-        $wordsAfterInQuery = count(explode(' ', $normalizedQuery)); // Количество слов после стемера
+        $wordsAfterInQuery = count(explode(' ', $normalizedQuery)); // РљРѕР»РёС‡РµСЃС‚РІРѕ СЃР»РѕРІ РїРѕСЃР»Рµ СЃС‚РµРјРµСЂР°
         if ($wordsBeforeInQuery != $wordsAfterInQuery) {
-            $this->error("Не удалось грамотно нормализовать запрос в пост анализаторе");
+            $this->error("РќРµ СѓРґР°Р»РѕСЃСЊ РіСЂР°РјРѕС‚РЅРѕ РЅРѕСЂРјР°Р»РёР·РѕРІР°С‚СЊ Р·Р°РїСЂРѕСЃ РІ РїРѕСЃС‚ Р°РЅР°Р»РёР·Р°С‚РѕСЂРµ");
         }
 
         $normalizedArray = explode(" ", $normalizedQuery);
         $cleanArray = explode(" ", $cleanQuery);
 
-        /* Поиск фамилий, аббревиатур и регулярных слов. Замена заглавных букв в нормализованной форме*/
+        /* РџРѕРёСЃРє С„Р°РјРёР»РёР№, Р°Р±Р±СЂРµРІРёР°С‚СѓСЂ Рё СЂРµРіСѓР»СЏСЂРЅС‹С… СЃР»РѕРІ. Р—Р°РјРµРЅР° Р·Р°РіР»Р°РІРЅС‹С… Р±СѓРєРІ РІ РЅРѕСЂРјР°Р»РёР·РѕРІР°РЅРЅРѕР№ С„РѕСЂРјРµ*/
         $result_words = "";
         foreach ($cleanArray as $key => $one_word) {
-            $first_letter = mb_substr($one_word, 0, 1, "windows-1251");
-            $second_letter = mb_substr($one_word, 1, 1, "windows-1251");
+            $first_letter = mb_substr($one_word, 0, 1, $this->encoding);
+            $second_letter = mb_substr($one_word, 1, 1, $this->encoding);
             $is_abbreviature = false;
             $is_name = false;
-            if (preg_match('/\\p{Lu}|\\p{Lt}/u', iconv("windows-1251", "UTF-8", $first_letter)) > 0
+            if (preg_match('/\\p{Lu}|\\p{Lt}/u', $this->encoding!='utf-8' ? iconv($this->encoding, "UTF-8", $first_letter) : $first_letter) > 0
                 && !
-                preg_match('/\\p{Lu}|\\p{Lt}/u', iconv("windows-1251", "UTF-8", $second_letter)) > 0
+                preg_match('/\\p{Lu}|\\p{Lt}/u', $this->encoding!='utf-8' ? iconv($this->encoding, "UTF-8", $second_letter) : $second_letter) > 0
             ) {
                 $is_name = true;
-            } elseif (preg_match('/\\p{Lu}|\\p{Lt}/u', iconv("windows-1251", "UTF-8", $first_letter)) > 0
+            } elseif (preg_match('/\\p{Lu}|\\p{Lt}/u', $this->encoding!='utf-8' ? iconv($this->encoding, "UTF-8", $first_letter) : $first_letter) > 0
                 &&
-                preg_match('/\\p{Lu}|\\p{Lt}/u', iconv("windows-1251", "UTF-8", $second_letter)) > 0
+                preg_match('/\\p{Lu}|\\p{Lt}/u', $this->encoding!='utf-8' ? iconv($this->encoding, "UTF-8", $second_letter) : $second_letter) > 0
             ) {
                 $is_abbreviature = true;
             }
             if ($is_abbreviature) {
                 $normalized_word = $normalizedArray[$key];
-                $elt = mb_convert_case($normalized_word, MB_CASE_UPPER, "windows-1251");
+                $elt = mb_convert_case($normalized_word, MB_CASE_UPPER, $this->encoding);
                 $result_words[] = $elt;
             } elseif ($is_name) {
                 $normalized_word = $normalizedArray[$key];
-                $elt = mb_convert_case($normalized_word, MB_CASE_TITLE, "windows-1251");
+                $elt = mb_convert_case($normalized_word, MB_CASE_TITLE, $this->encoding);
                 $result_words[] = $elt;
             } else {
                 $normalized_word = $normalizedArray[$key];
@@ -274,144 +253,75 @@ class Analizer
             }
         }
         $normalizedQuery = implode(" ", $result_words);
-        $this->message("Чистим и стеммим запрос для сохранения. Преобразованный вариант запроса:", $normalizedQuery);
+        $this->message("Р§РёСЃС‚РёРј Рё СЃС‚РµРјРјРёРј Р·Р°РїСЂРѕСЃ РґР»СЏ СЃРѕС…СЂР°РЅРµРЅРёСЏ. РџСЂРµРѕР±СЂР°Р·РѕРІР°РЅРЅС‹Р№ РІР°СЂРёР°РЅС‚ Р·Р°РїСЂРѕСЃР°:", $normalizedQuery);
 
 
-        /* В быстрый поиск добавляются имена и названия организаций в той форме в которой они есть в статье(если нет добавляются в оригинальной форме). */
-        $descriptorspec = array(
-            0 => array("pipe", "r"), // stdin is a pipe that the child will read from
-            1 => array("pipe", "w"), // stdout is a pipe that the child will write to
-            2 => array("pipe", "/dev/null", "w") // stderr is a file to write to
-        );
-        $cwd = $this->document_root . 'vedomosti/scripts/newsline/crosslinks.pl';
-        $env = null;
-        $process = proc_open("$cwd", $descriptorspec, $pipes, $cwd, $env);
-        if (is_resource($process)) {
-            fwrite($pipes[0], $this->article);
-            fclose($pipes[0]);
+        $queryForRelativesLink = $cleanQuery;
 
-            $article_text_parsed = stream_get_contents($pipes[1]);
-            fclose($pipes[1]);
-            proc_close($process);
-        } else {
+        $queryForSuggest = mb_convert_case($cleanQuery, MB_CASE_LOWER, $this->encoding);
+        $normalizedQuery = mb_convert_case($normalizedQuery, MB_CASE_LOWER, $this->encoding);
+        /* Р¤РёРЅР°Р»СЊРЅС‹Р№ СЌС‚Р°Рї СЃРѕС…СЂР°РЅРµРЅРёСЏ РІ СЃР°РґРґР¶РµСЃС‚С‹ Рё Р±С‹СЃС‚СЂС‹Р№ РїРѕРёСЃРє. */
+        $this->message("Р’ Р±С‹СЃС‚СЂС‹Р№ РїРѕРёСЃРє РїСЂРѕР±СѓРµРј СЃРѕС…СЂР°РЅРёС‚СЊ:", $queryForRelativesLink);
+        $this->save_to_related($queryForRelativesLink);
+    }
+
+    // РЎРѕС…СЂР°РЅРµРЅРёРµ РІ "Р±С‹СЃС‚СЂС‹Р№ РїРѕРёСЃРє"
+    function save_to_related($queryForRelativesLink)
+    {
+        if (!isset($queryForRelativesLink) || empty($queryForRelativesLink)) {
+            $this->message("РџСѓСЃС‚С‹Рµ РІС‹СЂР°Р¶РµРЅРёСЏ РёРіРЅРѕСЂРёСЂСѓРµРј");
             return;
         }
-        $findedNames = "";
-        $findedCrosslinks = preg_match_all("/%%%([А-Яа-яA-Za-z\s]+)%%%/im", $article_text_parsed, $crossWords);
-        if ($findedCrosslinks) {
-            foreach ($crossWords[1] as $crossWord) {
-                $reg = "/" . iconv("windows-1251", "UTF-8", $normalizedQuery) . "/isu";
-                if (preg_match($reg, iconv("windows-1251", "UTF-8", $crossWord))) {
-                    $findedNames = $crossWord;
+        // РСЃРєР»СЋС‡Р°РµРј РІСЃРµ СЃРїРµС†СЃРёРјРІРѕР»С‹
+        $relativesWords = explode(" ", $queryForRelativesLink);
+
+        // Р‘РѕР»СЊС€Рµ РїСЏС‚Рё Р·Р°РїРёСЃРµР№ РІ Р±С‹СЃС‚СЂС‹Р№ РїРѕРёСЃРє РЅРµ РґРѕР±Р°РІР»СЏРµРј
+        if (count($this->related) >= 5) {
+            $this->message("РЎС‚Р°С‚СЊСЏ СѓР¶Рµ РёРјРµРµС‚ 5 Р·Р°РїРёСЃРµР№ РІ Р±С‹СЃС‚СЂРѕРј РїРѕРёСЃРєРµ. РќРёС‡РµРіРѕ РЅРµ РґРѕР±Р°РІР»СЏРµРј");
+            return false;
+        }
+
+        // РџСЂРѕРІРµСЂРєР° РјРѕР¶РµС‚ Р±С‹С‚СЊ РЅР°С€Рµ РїРѕРёСЃРєРѕРІРѕРµ РІС‹СЂР°Р¶РµРЅРёРµ СѓР¶Рµ СЏРІР»СЏРµС‚СЃСЏ С‡Р°СЃС‚СЊСЋ СЃСѓС‰РµСЃС‚РІСѓСЋС‰РµРіРѕ С‚РѕРіРґР° РІС‹С…РѕРґРёРј
+        $bur=false;
+        foreach ($this->related as $id=>$word) {
+            if (false!==mb_strpos(mb_strtolower($word, $this->encoding), mb_strtolower($queryForRelativesLink, $this->encoding))) {
+                $bur=true;
+                break;
+            }
+        }
+        if ($bur) {
+            $this->message("РџРѕРёСЃРєРѕРІРѕРµ РІС‹СЂР°Р¶РµРЅРёРµ СѓР¶Рµ СЏРІР»СЏРµС‚СЃСЏ С‡Р°СЃС‚СЊСЋ СЃСѓС‰РµСЃС‚РІСѓС‰РµРіРѕ РёР»Рё С‚Р°РєРѕРµ РІС‹СЂР°Р¶РµРЅРёРµ СѓР¶Рµ СЃСѓС‰РµСЃС‚РІСѓРµС‚. РќРёС‡РµРіРѕ РЅРµ РјРµРЅСЏРµРј");
+            return false;
+        }
+
+        // РС‰РµРј РЅРµС‚ Р»Рё СѓР¶Рµ СЃСѓС‰РµСЃС‚РІСѓСЋС‰РёС… РІС…РѕРґСЏС‰РёС… РІ РёСЃРєРѕРјРѕРµ РІС‹СЂР°Р¶РµРЅРёРµ СЃР»РѕРІ РІ Р±Р°Р·Рµ, РІСЃРµ СЃРѕРІРїР°РґРµРЅРёСЏ СѓРґР°Р»СЏРµРј
+        foreach ($relativesWords as $one_relativeWord) {
+            if (mb_strlen($one_relativeWord, $this->encoding) < 4) continue; // РЎР»РёС€РєРѕРј РєРѕСЂРѕС‚РєРёРµ СЃР»РѕРІР° РЅРµ Р°РЅР°Р»РёР·РёСЂСѓРµРј
+            $this->message("РїСЂРѕРІРµСЂСЏРµРј $one_relativeWord...");
+            foreach ($this->related as $id=>$word) {
+                if (false!==mb_strpos(mb_strtolower($one_relativeWord, $this->encoding), mb_strtolower($word, $this->encoding))) {
+                    $this->removed[$id]=$word;
+                    unset($this->related[$id]);
                     break;
                 }
             }
         }
-        // Если выражение не найдено в именах и названиях статьи то берем оригинальный запрос
-        $queryForRelativesLink = "";
-        if (!isset($findedNames) || empty($findedNames)) {
-            $queryForRelativesLink = $cleanQuery;
-            $this->message("В именах и названиях выражение не найдено");
-        } else {
-            $queryForRelativesLink = $findedNames;
-            $this->message("В именах и названиях найдено искомое выражение");
-        }
 
-        $queryForSuggest = mb_convert_case($cleanQuery, MB_CASE_LOWER, "windows-1251");
-        $normalizedQuery = mb_convert_case($normalizedQuery, MB_CASE_LOWER, "windows-1251");
-        /* Финальный этап сохранения в садджесты и быстрый поиск. */
-        $this->message("В быстрый поиск пробуем сохранить:", $queryForRelativesLink);
-        $this->save_to_related($queryForRelativesLink);
-        $this->message("В садджесты пробуем сохранить(безсуфиксная форма - найденная форма):", $normalizedQuery . " - " . $queryForSuggest);
-        $this->save_to_suggest($normalizedQuery, $queryForSuggest, $originalsearchQuery);
+        $this->added[]=$queryForRelativesLink;
+        $this->related[]=$queryForRelativesLink;
+        $this->message("Р’ С‚Р°Р±Р»РёС†Сѓ Р±С‹СЃС‚СЂРѕРіРѕ РїРѕРёСЃРєР° РґРѕР±Р°РІРёР»Рё РЅРѕРІРѕРµ РІС‹СЂР°Р¶РµРЅРёРµ:", $queryForRelativesLink);
     }
 
-    // Сохранение в "быстрый поиск"
-    function save_to_related($queryForRelativesLink)
-    {
-        if (!isset($queryForRelativesLink) || empty($queryForRelativesLink)) {
-            $this->message("Пустые выражения игнорируем");
-            return;
-        }
-        // Исключаем все спецсимволы
-        $relativesWords = explode(" ", $queryForRelativesLink);
-
-        // Больше пяти записей в быстрый поиск не добавляем
-        $related = $this->mysql->get_arrayref("select value_varchar from " . $this->searchDB . ".tbl_news_attrs where news_id='" . $this->id_news . "' and attr_nick = 'related'");
-        if (count($related) >= 5) {
-            $this->message("Статья уже имеет 5 записей в быстром поиске. Ничего не добавляем");
-            return false;
-        }
-
-        // Проверка может быть наше поисковое выражение уже является частью существующего тогда выходим
-        $query = "select * from " . $this->searchDB . ".tbl_news_attrs where ((lower(value_varchar) like lower('%$queryForRelativesLink %') or lower(value_varchar) like lower('% $queryForRelativesLink%') or lower(value_varchar) like lower('% $queryForRelativesLink %')) or (lower(value_varchar) like lower('%$queryForRelativesLink%') and CHAR_LENGTH('$queryForRelativesLink') = CHAR_LENGTH(value_varchar))) and news_id = " . $this->id_news . " and attr_nick ='related'";
-        $res = $this->mysql->get_arrayref($query);
-        $count1 = count($res);
-        if ($count1) {
-            $this->message("Поисковое выражение уже является частью существущего или такое выражение уже существует. Ничего не меняем");
-            return false;
-        }
-
-        if ($this->debug_mode) {
-            $this->message("В режиме отладки запрос не сохраняется");
-            return;
-        }
-
-        // Ищем нет ли уже существующих входящих в искомое выражение слов в базе, все совпадения удаляем
-        foreach ($relativesWords as $one_relativeWord) {
-            if (strlen($one_relativeWord) < 4) continue; // Слишком короткие слова не анализируем
-            $query = "select * from " . $this->searchDB . ".tbl_news_attrs where (lower(value_varchar) like lower('%$one_relativeWord %') or lower(value_varchar) like lower('% $one_relativeWord%') or lower(value_varchar) like lower('% $one_relativeWord %')) and CHAR_LENGTH('$queryForRelativesLink') >= CHAR_LENGTH(value_varchar) and news_id = " . $this->id_news . " and attr_nick ='related'";
-            $res = $this->mysql->get_arrayref($query);
-            $count = count($res);
-            if ($count) {
-                /* более длинный запрос поглощает сущ. короткий */
-                $query = "delete from " . $this->searchDB . ".tbl_news_attrs where (lower(value_varchar) like lower('%$one_relativeWord %') or lower(value_varchar) like lower('% $one_relativeWord%') or lower(value_varchar) like lower('% $one_relativeWord %')) and CHAR_LENGTH('$queryForRelativesLink') >= CHAR_LENGTH(value_varchar) and news_id = " . $this->id_news . " and attr_nick ='related'";
-                $this->mysql->exec_sql($query);
-                $this->message("В таблице быстрого поиска есть более короткое выражения включающее это слово. Удаляем его.");
-                break;
-            }
-        }
-
-        $query = "insert into " . $this->searchDB . ".tbl_news_attrs (news_id, attr_nick, value_varchar, attr_type) values ('" . $this->id_news . "', 'related', '$queryForRelativesLink', 'varchar')";
-        $this->mysql->exec_sql($query);
-        $this->mysql->exec_sql("update " . $this->searchDB . ".tbl_news set news_modif_date = NOW() where news_id = '" . $this->id_news . "' limit 1");
-        $this->memcache->delete("news:" . $this->searchDB . ":" . $this->id_news);
-        $this->message("В таблицу быстрого поиска добавили новое выражение:", $queryForRelativesLink);
+    function get_results() {
+        return array('related'=>$this->related, 'added'=>$this->added, 'removed'=>$this->removed);
     }
 
-    function save_to_suggest($normalizedQuery, $queryForSuggest, $originalsearchQuery)
-    {
-        if ($normalizedQuery == "" || $queryForSuggest == "") {
-            $this->message("Пустой запрос для саджестов");
-            return;
-        }
-
-        if ($this->debug_mode) {
-            $this->message("В режиме отладки запрос не сохраняется");
-            return;
-        }
-        
-        $res = $this->mysql->get_row("select * from tbl_users_requests where lower(request) like lower('{$queryForSuggest}')");
-        if (!$res) {
-            $this->message("В таблице саджестов нет такого слова, запишем:", $queryForSuggest);
-            $this->mysql->exec_sql("insert into tbl_users_requests (original, request, normalized, first_request_date, last_request_date, total_request_count)
-                              values('" . mysql_real_escape_string($originalsearchQuery) . "','$queryForSuggest','$normalizedQuery', now(), now() , 1)");
-        } else {
-            $this->message("В таблице саджестов уже есть такие слова, добавляем количество запросов по слову:", $queryForSuggest);
-            $total_count = $res['total_request_count'];
-            $this->mysql->exec_sql("update tbl_users_requests set original='" . mysql_real_escape_string($originalsearchQuery) . "',request = '$queryForSuggest',normalized = '$normalizedQuery',  last_request_date =now(),
-                              total_request_count =" . ++$total_count . " where request like '{$queryForSuggest}'");
-        }
-
-//        $this->mysql->exec_sql("insert into tbl_log_requests (original, request, normalized, request_date, url)
-//                              values('" . mysql_real_escape_string($originalsearchQuery) . "','$queryForSuggest','$normalizedQuery', now(), '" . $this->full_url . "')");
-    }
-
-    // проверяет является ли слово нормализованной формой этого слова
+    // РїСЂРѕРІРµСЂСЏРµС‚ СЏРІР»СЏРµС‚СЃСЏ Р»Рё СЃР»РѕРІРѕ РЅРѕСЂРјР°Р»РёР·РѕРІР°РЅРЅРѕР№ С„РѕСЂРјРѕР№ СЌС‚РѕРіРѕ СЃР»РѕРІР°
     function is_normalized($searchQuery)
     {
-        $searchQuery = mb_convert_case($searchQuery, MB_CASE_LOWER, "windows-1251");
+        $searchQuery = mb_convert_case($searchQuery, MB_CASE_LOWER, $this->encoding);
         $stemmed_words = $this->lemmatizator($searchQuery);
+        print "stemmed words: $stemmed_words\n";
         $stemmed_words_list = explode("|", $stemmed_words);
         foreach ($stemmed_words_list as $stemmed_word) {
             if ($searchQuery == trim($stemmed_word)) return true;
@@ -422,7 +332,7 @@ class Analizer
 
     function lemmatized_word($searchQuery)
     {
-        if (substr($searchQuery, -1) == "а") $isWoman = true; else $isWoman = false;
+        if (substr($searchQuery, -1) == "Р°") $isWoman = true; else $isWoman = false;
         $stemmed_words = $this->lemmatizator($searchQuery);
         $return_word = $stemmed_words;
         $stemmed_words_list = explode("|", $stemmed_words);
@@ -430,9 +340,9 @@ class Analizer
             foreach ($stemmed_words_list as $stemmed_word) {
                 $stemmed_word = trim($stemmed_word, "?\n");
                 if ($isWoman) {
-                    if (substr($stemmed_word, -1) == "а") return $stemmed_word;
+                    if (substr($stemmed_word, -1) == "Р°") return $stemmed_word;
                 } else {
-                    if (substr($stemmed_word, -1) != "а") return $stemmed_word;
+                    if (substr($stemmed_word, -1) != "Р°") return $stemmed_word;
                 }
                 if ($searchQuery == trim($stemmed_word)) return true;
             }
@@ -449,10 +359,7 @@ class Analizer
             2 => array("pipe", "/dev/null", "w") // stderr is a file to write to
         );
 
-        $cwd = '/usr/local/www/export/admin/mystem';
-        $env = null;
-
-        $process = proc_open("$cwd/mystem -nl", $descriptorspec, $pipes, $cwd, $env);
+        $process = proc_open($this->mystem_cmd." -e ".$this->encoding." -nl", $descriptorspec, $pipes);
 
         if (is_resource($process)) {
             fwrite($pipes[0], $searchQuery);
@@ -488,5 +395,141 @@ class Analizer
     {
         //echo $this->logtext . "<br><br>" . $this->logfile;
         file_put_contents($this->logfile, $this->logtext . "<br><br><br>\n\n\n", FILE_APPEND | LOCK_EX);
+    }
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+class SearchAnalizer_Stemmer
+{
+    var $Stem_Caching = 0;
+    var $kill_predlog = true; //СѓРґР°Р»СЏС‚СЊ РёР»Рё РЅРµС‚ РїСЂРµРґР»РѕРіРё РёР· С„СЂР°Р·С‹
+    var $Stem_Cache = array();
+    var $VOWEL = 'Р°РµРёРѕСѓС‹СЌСЋСЏ';
+    var $PERFECTIVEGROUND = '((РёРІ|РёРІС€Рё|РёРІС€РёСЃСЊ|С‹РІ|С‹РІС€Рё|С‹РІС€РёСЃСЊ)|((?<=[Р°СЏ])(РІ|РІС€Рё|РІС€РёСЃСЊ)))$';
+    var $REFLEXIVE = '(СЃ[СЏСЊ])$';
+    var $ADJECTIVE = '(РµРµ|РёРµ|С‹Рµ|РѕРµ|РёРјРё|С‹РјРё|РµР№|РёР№|С‹Р№|РѕР№|РµРј|РёРј|С‹Рј|РѕРј|РµРіРѕ|РѕРіРѕ|РµРјСѓ|РѕРјСѓ|РёС…|С‹С…|СѓСЋ|СЋСЋ|Р°СЏ|СЏСЏ|РѕСЋ|РµСЋ)$';
+    var $PARTICIPLE = '((РёРІС€|С‹РІС€|СѓСЋС‰)|((?<=[Р°СЏ])(РµРј|РЅРЅ|РІС€|СЋС‰|С‰)))$';
+    var $VERB = '((РёР»Р°|С‹Р»Р°|РµРЅР°|РµР№С‚Рµ|СѓР№С‚Рµ|РёС‚Рµ|РёР»Рё|С‹Р»Рё|РµР№|СѓР№|РёР»|С‹Р»|РёРј|С‹Рј|РµРЅ|РёР»Рѕ|С‹Р»Рѕ|РµРЅРѕ|СЏС‚|СѓРµС‚|СѓСЋС‚|РёС‚|С‹С‚|РµРЅС‹|РёС‚СЊ|С‹С‚СЊ|РёС€СЊ|СѓСЋ|СЋ)|((?<=[Р°СЏ])(Р»Р°|РЅР°|РµС‚Рµ|Р№С‚Рµ|Р»Рё|Р№|Р»|РµРј|РЅ|Р»Рѕ|РЅРѕ|РµС‚|СЋС‚|РЅС‹|С‚СЊ|РµС€СЊ|РЅРЅРѕ)))$';
+    var $NOUN = '(Р°|РµРІ|РѕРІ|РёРµ|СЊРµ|Рµ|РёСЏРјРё|СЏРјРё|Р°РјРё|РµРё|РёРё|Рё|РёРµР№|РµР№|РѕР№|РёР№|Р№|РёСЏРј|СЏРј|РёРµРј|РµРј|Р°Рј|РѕРј|Рѕ|Сѓ|Р°С…|РёСЏС…|СЏС…|С‹|СЊ|РёСЋ|СЊСЋ|СЋ|РёСЏ|СЊСЏ|СЏ)$';
+    var $RVRE = '^(.*?[Р°РµРёРѕСѓС‹СЌСЋСЏ])(.*)$';
+    var $DERIVATIONAL = '[^Р°РµРёРѕСѓС‹СЌСЋСЏ][Р°РµРёРѕСѓС‹СЌСЋСЏ]+[^Р°РµРёРѕСѓС‹СЌСЋСЏ]+[Р°РµРёРѕСѓС‹СЌСЋСЏ].*(?<=Рѕ)СЃС‚СЊ?$';
+    var $PREDLOG = 'Рё|РґР»СЏ|РІ|РЅР°|РїРѕРґ|РёР·|СЃ|РїРѕ';
+
+    function s(&$s, $re, $to)
+    {
+        $orig = $s;
+        $s = mb_ereg_replace($re, $to, $s);
+        return $orig !== $s;
+    }
+
+    function m($s, $re)
+    {
+        return mb_ereg_match($re, $s);
+    }
+
+    function stem_words($words)
+    {
+
+        $word = explode(' ', $words);
+        for ($i = 0; $i < count($word); $i++) {
+            if ($this->kill_predlog) $word[$i] = mb_ereg_replace('(' . $this->PREDLOG . ')$', '', $word[$i]);
+            $word[$i] = $this->stem_word($word[$i]);
+        }
+        return implode(' ', $word);
+    }
+
+    function stem_word($word)
+    {
+        mb_regex_encoding('UTF-8');
+        mb_internal_encoding('UTF-8');
+        $word = $word = mb_strtolower($word);
+        $word = str_replace('С‘', 'Рµ', $word);
+        # Check against cache of stemmed words
+        if ($this->Stem_Caching && isset($this->Stem_Cache[$word])) {
+            return $this->Stem_Cache[$word];
+        }
+        $stem = $word;
+        do {
+            if (!mb_ereg($this->RVRE, $word, $p)) break;
+            $start = $p[1];
+            $RV = $p[2];
+            if (!$RV) break;
+
+            # Step 1
+            if (!$this->s($RV, $this->PERFECTIVEGROUND, '')) {
+                $this->s($RV, $this->REFLEXIVE, '');
+
+                if ($this->s($RV, $this->ADJECTIVE, '')) {
+                    $this->s($RV, $this->PARTICIPLE, '');
+                } else {
+                    if (!$this->s($RV, $this->VERB, ''))
+                        $this->s($RV, $this->NOUN, '');
+                }
+            }
+
+            # Step 2
+            $this->s($RV, 'Рё$', '');
+
+            # Step 3
+            if ($this->m($RV, $this->DERIVATIONAL))
+                $this->s($RV, 'РѕСЃС‚СЊ?$', '');
+
+            # Step 4
+            if (!$this->s($RV, 'СЊ$', '')) {
+                $this->s($RV, 'РµР№С€Рµ?', '');
+                $this->s($RV, 'РЅРЅ$', 'РЅ');
+            }
+
+            $stem = $start . $RV;
+        } while (false);
+        if ($this->Stem_Caching) $this->Stem_Cache[$word] = $stem;
+        return $stem;
+    }
+
+    function stem_caching($parm_ref)
+    {
+        $caching_level = @$parm_ref['-level'];
+        if ($caching_level) {
+            if (!$this->m($caching_level, '^[012]$')) {
+                die(__CLASS__ . "::stem_caching() - Legal values are '0','1' or '2'. '$caching_level' is not a legal value");
+            }
+            $this->Stem_Caching = $caching_level;
+        }
+        return $this->Stem_Caching;
+    }
+
+    function clear_stem_cache()
+    {
+        $this->Stem_Cache = array();
     }
 }

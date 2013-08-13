@@ -30,6 +30,9 @@
 //
 //    Сохранение Быстрого поиска. Проверка на наличие в быстром поиске уже существующих форм выражение(при необходимости заменяем)
 
+
+//  TODO!   все preg_ нужно заменить на mb_ereg-аналоги!
+
 /*
 
 $config=array(
@@ -118,14 +121,15 @@ class SearchAnalizer
         }
 
         // Заменяем все повторяющиеся пробельные символы на одиночные пробелы
-        $searchQuery = preg_replace('/[\s]+/', ' ', $searchQuery);
+        $searchQuery = preg_replace('/[\s]+/u', ' ', $searchQuery);
 
         // Большие словосочетания не берем максимум 3 слова
-        $wordsInQuery = preg_replace('/[\+\=\!\"\№\;\%\:\?\*\'\»\«\{\}\[\]\%\(\)\_\@\#\$\^\&\<\>\/\|\.0-9]/', ' ', $searchQuery);
+        $wordsInQuery=$searchQuery;
+        $wordsInQuery = mb_ereg_replace('[\+\=\!\"\№\;\%\:\?\*\'\»\«\{\}\[\]\%\(\)\_\@\#\$\^\&\<\>\/\|\.0-9]', ' ', $wordsInQuery);
         $wordsInQuery = str_replace('\\', '', trim($wordsInQuery));
-        $wordsInQuery = preg_replace('/[\s]+/', ' ', $wordsInQuery);
+        $wordsInQuery = mb_ereg_replace('[\s]+', ' ', $wordsInQuery);
         print "Words in query: $wordsInQuery\n\n";
-        $wordsInQuery = explode(' ', $wordsInQuery);
+        $wordsInQuery = mb_split('\s+', $wordsInQuery);
         if (count($wordsInQuery) > 3) {
             $this->error("Не обрабатываем запросы больше 3 слов");
         }
@@ -136,7 +140,7 @@ class SearchAnalizer
         }
 
         // Пустые и состоящие из одних символов и чисел выражения не берем
-        $clearQuery = preg_replace('/[\!\"\№\;\%\:\?\*\'\»\«\{\}\[\]\%\(\)\_\@\#\$\^\&\<\>\/\|\.0-9]/', '', $searchQuery);
+        $clearQuery = mb_ereg_replace('[\!\"\№\;\%\:\?\*\'\»\«\{\}\[\]\%\(\)\_\@\#\$\^\&\<\>\/\|\.0-9]', '', $searchQuery);
         $clearQuery = str_replace('\\', '', $clearQuery);
         if (strlen(trim($clearQuery)) < 1) {
             $this->error("Пустые, неинформативные и состоящие из одних символов и цифр выражения не берем");
@@ -169,9 +173,9 @@ class SearchAnalizer
         $r = preg_match($templateOfInsert, $articleUTF, $matches);
         if (!$r) {
             $this->message("Оригинальная форма '" . htmlspecialchars($searchQuery) . "'", "не найдено");
-            $normalizedQuery = preg_replace('/[\+\=\!\"\№\;\%\:\?\*\'\»\«\{\}\[\]\%\(\)\_\@\#\$\^\&\<\>\/\|\.]/', ' ', $searchQuery);
+            $normalizedQuery = mb_ereg_replace('[\+\=\!\"\№\;\%\:\?\*\'\»\«\{\}\[\]\%\(\)\_\@\#\$\^\&\<\>\/\|\.]', ' ', $searchQuery);
             $normalizedQuery = str_replace('\\', '', trim($normalizedQuery));
-            $normalizedQuery = preg_replace('/[\s]+/', ' ', $normalizedQuery);
+            $normalizedQuery = mb_ereg_replace('[\s]+', ' ', $normalizedQuery);
 
             $normalizedQueryUTF = $this->encoding!='utf-8' ? mb_convert_encoding($normalizedQuery,"UTF-8", $this->encoding) : $normalizedQuery;
 

@@ -30,15 +30,13 @@
 //
 //    Сохранение Быстрого поиска. Проверка на наличие в быстром поиске уже существующих форм выражение(при необходимости заменяем)
 
-
-//  TODO!   все preg_ нужно заменить на mb_ereg-аналоги!
-
 /*
 
 $config=array(
     'encoding'  =>'utf-8',      //  кодировка, одна из: 'cp866', 'cp1251', 'koi8-r', 'utf-8'
     'os'        =>'freebsd',    //  операционная система, одна из 'freebsd', 'linux3.0-32bit'
-    'script_path'   => './'     //  путь к текущим скриптам
+    'script_path'   => './',    //  путь к текущим скриптам
+    'debug'     => 1
 );
 
 */
@@ -61,7 +59,7 @@ class SearchAnalizer
 
     function __construct($news_text, $related=array(), $config=array())
     {
-        $this->debug_mode = 1;
+        $this->debug_mode = isset($config['debug']) ? $config['debug'] : 0;
         $this->article = $news_text;
         $this->related=$related;
         $this->stemmer_obj = new SearchAnalizer_Stemmer();
@@ -121,21 +119,21 @@ class SearchAnalizer
         }
 
         // Заменяем все повторяющиеся пробельные символы на одиночные пробелы
-        $searchQuery = preg_replace('/[\s]+/u', ' ', $searchQuery);
+        $searchQuery = mb_ereg_replace('[\s]+', ' ', $searchQuery);
 
         // Большие словосочетания не берем максимум 3 слова
         $wordsInQuery=$searchQuery;
         $wordsInQuery = mb_ereg_replace('[\+\=\!\"\№\;\%\:\?\*\'\»\«\{\}\[\]\%\(\)\_\@\#\$\^\&\<\>\/\|\.0-9]', ' ', $wordsInQuery);
         $wordsInQuery = str_replace('\\', '', trim($wordsInQuery));
         $wordsInQuery = mb_ereg_replace('[\s]+', ' ', $wordsInQuery);
-        print "Words in query: $wordsInQuery\n\n";
+        if ($this->debug_mode) print "Words in query: $wordsInQuery\n\n";
         $wordsInQuery = mb_split('\s+', $wordsInQuery);
         if (count($wordsInQuery) > 3) {
             $this->error("Не обрабатываем запросы больше 3 слов");
         }
 
         // Запросы содержащие URL не принимаются
-        if (preg_match('/(\.[a-z1-9а-я]+|http\:\/\/|https\:\/\/|htp\:\/\/|htps\:\/\/)/i', $searchQuery)) {
+        if (mb_eregi('(\.[a-z1-9а-я]+|http\:\/\/|https\:\/\/|htp\:\/\/|htps\:\/\/)', $searchQuery)) {
             $this->error("Не обрабатываем запросы содержащие URL");
         }
 
@@ -163,14 +161,14 @@ class SearchAnalizer
 
         // поиск точных вхождений в текст статьи
         if ($this->encoding!='utf-8') {
-            $searchQueryUTF = iconv($this->encoding, 'UTF-8', $searchQuery);
-            $articleUTF = iconv($this->encoding, 'UTF-8', $this->article);
+            $searchQueryUTF = mb_convert_encoding($searchQuery, 'UTF-8', $this->encoding);
+            $articleUTF = mb_convert_encoding($this->article, 'UTF-8', $this->encoding);
         } else {
             $searchQueryUTF=$searchQuery;
             $articleUTF=$this->article;
         }
-        $templateOfInsert = "/(^|\s|)(" . preg_quote($searchQueryUTF) . iconv("windows-1251", "UTF-8", ")(\'|\"|\,|\;|\.|\s|\n|\r|\»|$)/isu");
-        $r = preg_match($templateOfInsert, $articleUTF, $matches);
+        $templateOfInsert = "(^|\s|)(" . ($searchQueryUTF) . mb_convert_encoding(")(\'|\"|\,|\;|\.|\s|\n|\r|\»|$)", "UTF-8", "windows-1251");
+        $r = mb_eregi($templateOfInsert, $articleUTF, $matches);
         if (!$r) {
             $this->message("Оригинальная форма '" . htmlspecialchars($searchQuery) . "'", "не найдено");
             $normalizedQuery = mb_ereg_replace('[\+\=\!\"\№\;\%\:\?\*\'\»\«\{\}\[\]\%\(\)\_\@\#\$\^\&\<\>\/\|\.]', ' ', $searchQuery);
@@ -179,14 +177,14 @@ class SearchAnalizer
 
             $normalizedQueryUTF = $this->encoding!='utf-8' ? mb_convert_encoding($normalizedQuery,"UTF-8", $this->encoding) : $normalizedQuery;
 
-            $r = preg_match("/(^|\s|)(" . preg_quote($normalizedQueryUTF) . mb_convert_encoding(")(\'|\"|\,|\;|\.|\s|\n|\r|\»|$)/isu", "UTF-8", "windows-1251"), $articleUTF, $matches);
+            $r = mb_eregi("(^|\s|)(" . ($normalizedQueryUTF) . mb_convert_encoding(")(\'|\"|\,|\;|\.|\s|\n|\r|\»|$)", "UTF-8", "windows-1251"), $articleUTF, $matches);
             if (!$r) {
                 $this->message("Чистая форма(без спецсимволов) '" . htmlspecialchars($normalizedQuery) . "'", "не найдено");
             } else {
-                $searchQuery = $this->encoding!='utf-8' ? iconv("UTF-8", $this->encoding, $matches[2]) : $matches[2];
+                $searchQuery = $matches[2];
             }
         } else {
-            $searchQuery = $this->encoding!='utf-8' ? iconv("UTF-8", $this->encoding, $matches[2]) : $matches[2];
+            $searchQuery = $matches[2];
         }
 
         /* Поиск не удался выходим. */
@@ -204,26 +202,26 @@ class SearchAnalizer
         $this->message("Запуск пост анализатора поискового выражения");
 
         // Убираем все спецсимволы
-        $cleanQuery = preg_replace('/[\+\=\!\"\№\;\%\:\?\*\'\»\«\{\}\[\]\%\(\)\_\@\#\$\^\&\<\>\/\|\.]/', ' ', $searchQuery);
+        $cleanQuery = mb_ereg_replace('[\+\=\!\"\№\;\%\:\?\*\'\»\«\{\}\[\]\%\(\)\_\@\#\$\^\&\<\>\/\|\.]', ' ', $searchQuery);
         $cleanQuery = str_replace('\\', '', trim($cleanQuery));
-        $cleanQuery = preg_replace('/[\s]+/', ' ', $cleanQuery);
+        $cleanQuery = mb_ereg_replace('[\s]+', ' ', $cleanQuery);
 
 
         // Получаем нормализованную форму
-        $wordsBeforeInQuery = count(explode(' ', $cleanQuery)); // Количество слов до стемера
+        $wordsBeforeInQuery = count(mb_split('\s+', $cleanQuery)); // Количество слов до стемера
         $normalizedQueryUTF = $this->encoding!='utf-8' ? mb_convert_encoding($cleanQuery, 'UTF-8', $this->encoding) : $cleanQuery;
         $normalizedQueryUTF = $this->stemmer($normalizedQueryUTF);
         $normalizedQuery = $this->encoding!='utf-8' ? mb_convert_encoding($normalizedQueryUTF, $this->encoding, 'UTF-8') : $normalizedQueryUTF;
         $normalizedQuery = str_replace('?', '', $normalizedQuery);
         $normalizedQuery = str_replace('!', '', $normalizedQuery);
-        $normalizedQuery = preg_replace('/[\s]+/', ' ', $normalizedQuery);
-        $wordsAfterInQuery = count(explode(' ', $normalizedQuery)); // Количество слов после стемера
+        $normalizedQuery = mb_ereg_replace('[\s]+', ' ', $normalizedQuery);
+        $wordsAfterInQuery = count(mb_split('\s+', $normalizedQuery)); // Количество слов после стемера
         if ($wordsBeforeInQuery != $wordsAfterInQuery) {
             $this->error("Не удалось грамотно нормализовать запрос в пост анализаторе");
         }
 
-        $normalizedArray = explode(" ", $normalizedQuery);
-        $cleanArray = explode(" ", $cleanQuery);
+        $normalizedArray = mb_split('\s+', $normalizedQuery);
+        $cleanArray = mb_split('\s+', $cleanQuery);
 
         /* Поиск фамилий, аббревиатур и регулярных слов. Замена заглавных букв в нормализованной форме*/
         $result_words = "";
@@ -232,14 +230,14 @@ class SearchAnalizer
             $second_letter = mb_substr($one_word, 1, 1, $this->encoding);
             $is_abbreviature = false;
             $is_name = false;
-            if (preg_match('/\\p{Lu}|\\p{Lt}/u', $this->encoding!='utf-8' ? iconv($this->encoding, "UTF-8", $first_letter) : $first_letter) > 0
+            if (mb_ereg('\\p{Lu}|\\p{Lt}', $this->encoding!='utf-8' ? mb_convert_encoding($first_letter, "UTF-8", $this->encoding) : $first_letter) > 0
                 && !
-                preg_match('/\\p{Lu}|\\p{Lt}/u', $this->encoding!='utf-8' ? iconv($this->encoding, "UTF-8", $second_letter) : $second_letter) > 0
+                mb_ereg('\\p{Lu}|\\p{Lt}', $this->encoding!='utf-8' ? mb_convert_encoding($second_letter, "UTF-8", $this->encoding) : $second_letter) > 0
             ) {
                 $is_name = true;
-            } elseif (preg_match('/\\p{Lu}|\\p{Lt}/u', $this->encoding!='utf-8' ? iconv($this->encoding, "UTF-8", $first_letter) : $first_letter) > 0
+            } elseif (mb_ereg('\\p{Lu}|\\p{Lt}', $this->encoding!='utf-8' ? mb_convert_encoding($first_letter, "UTF-8", $this->encoding) : $first_letter) > 0
                 &&
-                preg_match('/\\p{Lu}|\\p{Lt}/u', $this->encoding!='utf-8' ? iconv($this->encoding, "UTF-8", $second_letter) : $second_letter) > 0
+                mb_ereg('\\p{Lu}|\\p{Lt}', $this->encoding!='utf-8' ? mb_convert_encoding($second_letter, "UTF-8", $this->encoding) : $second_letter) > 0
             ) {
                 $is_abbreviature = true;
             }
@@ -325,8 +323,8 @@ class SearchAnalizer
     {
         $searchQuery = mb_convert_case($searchQuery, MB_CASE_LOWER, $this->encoding);
         $stemmed_words = $this->lemmatizator($searchQuery);
-        print "stemmed words: $stemmed_words\n";
-        $stemmed_words_list = explode("|", $stemmed_words);
+        if ($this->debug_mode) print "stemmed words: $stemmed_words\n";
+        $stemmed_words_list = mb_split("\|", $stemmed_words);
         foreach ($stemmed_words_list as $stemmed_word) {
             if ($searchQuery == trim($stemmed_word)) return true;
         }

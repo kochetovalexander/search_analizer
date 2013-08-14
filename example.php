@@ -1,5 +1,5 @@
 <?php
-require_once('search_analyzer.php');
+require_once('search_analizer.php');
 
 error_reporting(6143); ini_set('display_errors',1);
 

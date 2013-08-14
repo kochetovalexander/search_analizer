@@ -3,7 +3,7 @@
 
 setlocale(LC_ALL, 'ru_RU.CP1251');
 
-include('search_analyzer.php');
+include('search_analizer.php');
 
 $debug = false;
 

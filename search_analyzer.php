@@ -77,12 +77,10 @@ class SearchAnalizer
 
         if (isset($config['script_path'])) {
             $path=$config['script_path'];
-        } elseif (isset($GLOBALS['argv'])) {
-            $path=dirname(realpath($GLOBALS['argv'][0]));
         } else {
-            $path='./';
+            $path=dirname(realpath(__FILE__)).'/';
         }
-        $this->mystem_cmd=$path.'/mystem/mystem.'.$mystem;
+        $this->mystem_cmd=$path.'mystem/mystem.'.$mystem;
 
     }
 
